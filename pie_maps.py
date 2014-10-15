@@ -1,0 +1,100 @@
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
+from mpl_toolkits.basemap import Basemap
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from itertools import repeat
+
+colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral']
+
+
+class MainDisplay(object):
+    """docstring for MainDisplay"""
+    def __init__(self, figsize=(11.7,8.3)):
+        super(MainDisplay, self).__init__()
+        self.fig = plt.figure(figsize=figsize)
+        plt.subplots_adjust(left=0.05,right=0.95,top=0.90,bottom=0.05,wspace=0.15,hspace=0.05)
+        self.ax = plt.subplot(111)
+        cid = self.fig.canvas.mpl_connect('motion_notify_event', self.onmove)
+
+    def onmove(self, event):
+        print "wii"
+
+class MapData(object):
+    """docstring for MapData"""
+    def __init__(self, filename_coordinates, filename_clusters=None):
+        super(MapData, self).__init__()
+        # see is this variable is necesary
+        self.df_coordinates = df = pd.read_csv(filename_coordinates, sep=' ')
+        self.populations = self.get_values('Population')
+        self.longitude = self.get_values('Longitude')
+        self.latitude = self.get_values('Latitude')
+
+    def get_values(self, valuename):
+        return self.df_coordinates[valuename].values
+
+    def get_ratios(self):
+        return list(repeat([0.4,0.3,0.3], len(self.populations)))
+
+
+class Map(Basemap):
+    """docstring for Map"""
+    def __init__(self, ax):
+        super(Map, self).__init__(projection='merc',llcrnrlat=-80,urcrnrlat=80,\
+                llcrnrlon=-180,urcrnrlon=180,lat_ts=20,resolution='i', ax=ax)
+        #pass arg by parameter so they can change proj and other things
+    
+    def draw(self, color='#9A9595', alpha=0.1):
+        #map_.bluemarble()
+        #map_.shadedrelief()
+        self.drawcoastlines()
+        self.drawcountries()
+        self.fillcontinents(color=color, alpha=alpha)
+        self.drawmapboundary()
+
+        self.drawmeridians(np.arange(0, 360, 30))
+        self.drawparallels(np.arange(-90, 90, 30))
+
+
+def get_clusters(filename):
+    #this fuction should return list of colors depending on amount of clusters
+    pass
+
+
+def draw_pie_charts(ax, label, ratios=[0.4,0.3,0.3], X=0, Y=0, size = 500):
+    """
+    """
+    N = len(ratios)
+    xy = []
+    start = 0.
+    for ratio in ratios:
+        x = [0] + np.cos(np.linspace(2*np.pi*start,2*np.pi*(start+ratio), 30)).tolist()
+        y = [0] + np.sin(np.linspace(2*np.pi*start,2*np.pi*(start+ratio), 30)).tolist()
+        xy1 = zip(x,y)
+        xy.append(xy1)
+        start += ratio
+ 
+    for i, xyi in enumerate(xy):
+        ax.scatter([X],[Y] , marker=(xyi,0), s=size, facecolor=colors[i], alpha=0.9 )
+        ax.annotate(label, xy= (X, Y) , bbox = dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.8, 0.8)))
+        
+def main():
+    """
+    """
+    FILENAME_COR = 'data/don_coordinates.txt'
+    
+    my_display = MainDisplay()
+    my_data = MapData(FILENAME_COR)
+    my_map = Map(my_display.ax)
+    my_map.draw()
+    
+    x,y = my_map(my_data.longitude, my_data.latitude)
+    
+    map(lambda p: draw_pie_charts(my_display.ax, p[0], ratios= p[1], X=p[2], Y=p[3]), zip(my_data.populations, my_data.get_ratios(), x, y))
+
+    plt.show()
+
+if __name__ == '__main__':
+    main()
