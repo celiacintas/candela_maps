@@ -7,8 +7,13 @@ import numpy as np
 import pandas as pd
 from itertools import repeat
 
-colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral']
+#colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral']
 
+def get_colors(num_clusters):
+    colormap = plt.cm.gist_ncar
+    return [colormap(i) for i in np.linspace(0, 0.9, num_clusters)]
+
+colors = get_colors(5)
 
 class MainDisplay(object):
     """docstring for MainDisplay"""
@@ -24,20 +29,36 @@ class MainDisplay(object):
 
 class MapData(object):
     """docstring for MapData"""
-    def __init__(self, filename_coordinates, filename_clusters=None):
+    def __init__(self, filename_coordinates, filename_clusters=None, filename_individuals=None):
         super(MapData, self).__init__()
         # see is this variable is necesary
-        self.df_coordinates = df = pd.read_csv(filename_coordinates, sep=' ')
+        self.df_coordinates = pd.read_csv(filename_coordinates, sep=' ')
+        self.df_clusters = map(lambda s: s.strip(), open(filename_clusters).readlines())
+        self.df_individuals = pd.read_csv(filename_individuals, sep='\t', header=None)
         self.populations = self.get_values('Population')
         self.longitude = self.get_values('Longitude')
         self.latitude = self.get_values('Latitude')
-
+        self.get_populations_individuals()
+        
     def get_values(self, valuename):
         return self.df_coordinates[valuename].values
 
-    def get_ratios(self):
-        return list(repeat([0.4,0.3,0.3], len(self.populations)))
+    def get_populations_individuals(self):
+        """Get name and number of individuals in that population"""
+        self.df_individuals.columns = ['ind', 'pop']
+        groups = self.df_individuals.groupby('pop')
+        self.populations_ind = dict(map(lambda p: (p, groups.get_group(p).shape[0]), self.populations))
 
+
+    def get_ratios(self):
+        return list(repeat([0.2, 0.2, 0.3, 0.1, 0.2], len(self.populations)))
+
+    def get_clusters(self, population):
+        #for c in self.df_clusters[cls]
+
+        #for each populations get clusters involve
+
+        pass
 
 class Map(Basemap):
     """docstring for Map"""
@@ -56,11 +77,6 @@ class Map(Basemap):
 
         self.drawmeridians(np.arange(0, 360, 30))
         self.drawparallels(np.arange(-90, 90, 30))
-
-
-def get_clusters(filename):
-    #this fuction should return list of colors depending on amount of clusters
-    pass
 
 
 def draw_pie_charts(ax, label, ratios=[0.4,0.3,0.3], X=0, Y=0, size = 500):
@@ -84,9 +100,12 @@ def main():
     """
     """
     FILENAME_COR = 'data/don_coordinates.txt'
+    FILENAME_CLUS = 'data/CandelaFStree.populations.indlist.txt'
+    FILENAME_IND_POP = 'data/candela_main.idfile.txt'
     
     my_display = MainDisplay()
-    my_data = MapData(FILENAME_COR)
+    my_data = MapData(FILENAME_COR, FILENAME_CLUS, FILENAME_IND_POP)
+    print my_data.populations_ind
     my_map = Map(my_display.ax)
     my_map.draw()
     
