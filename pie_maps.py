@@ -9,6 +9,7 @@ import pandas as pd
 from itertools import repeat
 
 
+#TODO fix this put inside class and read number of clusters
 def get_colors(num_clusters):
     colormap = plt.cm.gist_ncar
     return [colormap(i) for i in np.linspace(0, 0.9, num_clusters)]
@@ -47,25 +48,27 @@ class MapData(object):
         """Get name and number of individuals in that population"""
         self.df_individuals.columns = ['ind', 'pop']
         groups = self.df_individuals.groupby('pop')
+
         return dict(map(lambda p: (p, [groups.get_group(p).shape[0], list(groups.get_group(p)['ind'].values)]), self.populations))
 
 
     def get_ratios(self, population):
         clusters = self.get_clusters(population)
         total_individuals = self.populations_ind[population][0]
+
         return map(lambda p: p/total_individuals, clusters.values())
-        #return list(repeat([0.2, 0.2, 0.3, 0.1, 0.2], len(self.populations)))
+
 
     def get_clusters(self, population):
         clusters = dict(zip(range(1, 76), [0]*75))
         individuals = self.populations_ind[population][1] # This is the list of the indiviudals in the group
-        #print population, individuals 
         for individual in individuals:
             for c in self.df_clusters:
                 if c.find(individual) != -1:
                     clusters[int(c.split(' ')[0])] += 1
                     # gete number of cluster and add 1
         print population, clusters
+        
         return clusters
 
 
@@ -114,7 +117,6 @@ def main():
     
     my_display = MainDisplay()
     my_data = MapData(FILENAME_COR, FILENAME_CLUS, FILENAME_IND_POP)
-    #print my_data.populations_ind
     my_map = Map(my_display.ax)
     my_map.draw()
     
