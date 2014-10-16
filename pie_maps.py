@@ -1,5 +1,6 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
+from __future__ import division 
 
 from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
@@ -7,13 +8,12 @@ import numpy as np
 import pandas as pd
 from itertools import repeat
 
-#colors = ['yellowgreen', 'gold', 'lightskyblue', 'lightcoral']
 
 def get_colors(num_clusters):
     colormap = plt.cm.gist_ncar
     return [colormap(i) for i in np.linspace(0, 0.9, num_clusters)]
 
-colors = get_colors(5)
+colors = get_colors(75)
 
 class MainDisplay(object):
     """docstring for MainDisplay"""
@@ -25,7 +25,7 @@ class MainDisplay(object):
         cid = self.fig.canvas.mpl_connect('motion_notify_event', self.onmove)
 
     def onmove(self, event):
-        print "wii"
+        pass
 
 class MapData(object):
     """docstring for MapData"""
@@ -38,7 +38,7 @@ class MapData(object):
         self.populations = self.get_values('Population')
         self.longitude = self.get_values('Longitude')
         self.latitude = self.get_values('Latitude')
-        self.get_populations_individuals()
+        self.populations_ind = self.get_populations_individuals()
         
     def get_values(self, valuename):
         return self.df_coordinates[valuename].values
@@ -47,18 +47,27 @@ class MapData(object):
         """Get name and number of individuals in that population"""
         self.df_individuals.columns = ['ind', 'pop']
         groups = self.df_individuals.groupby('pop')
-        self.populations_ind = dict(map(lambda p: (p, groups.get_group(p).shape[0]), self.populations))
+        return dict(map(lambda p: (p, [groups.get_group(p).shape[0], list(groups.get_group(p)['ind'].values)]), self.populations))
 
 
-    def get_ratios(self):
-        return list(repeat([0.2, 0.2, 0.3, 0.1, 0.2], len(self.populations)))
+    def get_ratios(self, population):
+        clusters = self.get_clusters(population)
+        total_individuals = self.populations_ind[population][0]
+        return map(lambda p: p/total_individuals, clusters.values())
+        #return list(repeat([0.2, 0.2, 0.3, 0.1, 0.2], len(self.populations)))
 
     def get_clusters(self, population):
-        #for c in self.df_clusters[cls]
+        clusters = dict(zip(range(1, 76), [0]*75))
+        individuals = self.populations_ind[population][1] # This is the list of the indiviudals in the group
+        #print population, individuals 
+        for individual in individuals:
+            for c in self.df_clusters:
+                if c.find(individual) != -1:
+                    clusters[int(c.split(' ')[0])] += 1
+                    # gete number of cluster and add 1
+        print population, clusters
+        return clusters
 
-        #for each populations get clusters involve
-
-        pass
 
 class Map(Basemap):
     """docstring for Map"""
@@ -105,14 +114,16 @@ def main():
     
     my_display = MainDisplay()
     my_data = MapData(FILENAME_COR, FILENAME_CLUS, FILENAME_IND_POP)
-    print my_data.populations_ind
+    #print my_data.populations_ind
     my_map = Map(my_display.ax)
     my_map.draw()
     
+    my_data.get_clusters(my_data.populations_ind.keys()[0])
     x,y = my_map(my_data.longitude, my_data.latitude)
     
-    map(lambda p: draw_pie_charts(my_display.ax, p[0], ratios= p[1], X=p[2], Y=p[3]), zip(my_data.populations, my_data.get_ratios(), x, y))
+    map(lambda p: draw_pie_charts(my_display.ax, p[0], ratios= my_data.get_ratios(p[0]), X=p[1], Y=p[2]), zip(my_data.populations, x, y))
 
+    
     plt.show()
 
 if __name__ == '__main__':
