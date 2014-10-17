@@ -16,7 +16,7 @@ class MainDisplay(object):
         plt.subplots_adjust(left=0.05,right=0.95,top=0.90,bottom=0.05,wspace=0.15,hspace=0.05)
         self.ax = plt.subplot(111)
         cid = self.fig.canvas.mpl_connect('motion_notify_event', self.onmove)
-        self.colors = self.get_colors(75) #convert to a parameter variable
+        self.colors = self.get_colors(75) #TODO convert to a parameter variable
 
     def onmove(self, event):
         """ """
@@ -67,7 +67,8 @@ class MapData(object):
         self.df_individuals.columns = ['ind', 'pop']
         groups = self.df_individuals.groupby('pop')
 
-        return dict(map(lambda p: (p, [groups.get_group(p).shape[0], list(groups.get_group(p)['ind'].values)]), self.populations))
+        return dict(map(lambda p: (p, [groups.get_group(p).shape[0], list(groups.get_group(p)['ind'].values)]), 
+                        self.populations))
 
 
     def get_ratios(self, population):
@@ -117,6 +118,7 @@ class Map(Basemap):
 def main():
     """
     """
+    #TODO use argparse and pass the filename by parameter
     FILENAME_COR = 'data/don_coordinates.txt'
     FILENAME_CLUS = 'data/CandelaFStree.populations.indlist.txt'
     FILENAME_IND_POP = 'data/candela_main.idfile.txt'
@@ -129,7 +131,8 @@ def main():
     my_data.get_clusters(my_data.populations_ind.keys()[0])
     x,y = my_map(my_data.longitude, my_data.latitude)
     
-    map(lambda p: my_display.draw_pie_charts(p[0], ratios= my_data.get_ratios(p[0]), X=p[1], Y=p[2]), zip(my_data.populations, x, y))
+    map(lambda p: my_display.draw_pie_charts(p[0], ratios= my_data.get_ratios(p[0]), X=p[1], Y=p[2]), 
+        zip(my_data.populations, x, y))
 
     
     plt.show()
