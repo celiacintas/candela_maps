@@ -26,7 +26,7 @@ class MainDisplay(object):
         """ """
         self.colormap = plt.cm.gist_ncar
         
-        return [self.colormap(i) for i in np.linspace(0, 0.9, num_clusters)]
+        return dict(zip(range(1,num_clusters +1), [self.colormap(i) for i in np.linspace(0, 0.9, num_clusters)]))
 
     def draw_pie_charts(self, label, ratios=[0.4,0.3,0.3], X=0, Y=0, size = 500):
         """ """
@@ -41,7 +41,7 @@ class MainDisplay(object):
             start += ratio
      
         for i, xyi in enumerate(xy):
-            self.ax.scatter([X],[Y] , marker=(xyi,0), s=size, facecolor=self.colors[i], alpha=0.9 )
+            self.ax.scatter([X],[Y] , marker=(xyi,0), s=size, facecolor=self.colors[i+1], alpha=0.9 )
             self.ax.annotate(label, xy= (X, Y) , bbox = dict(boxstyle="round", ec=(1., 0.5, 0.5), fc=(1., 0.8, 0.8)))
 
 
@@ -128,7 +128,7 @@ def main():
     my_map = Map(my_display.ax)
     my_map.draw()
     
-    my_data.get_clusters(my_data.populations_ind.keys()[0])
+    #my_data.get_clusters(my_data.populations_ind.keys()[0])
     x,y = my_map(my_data.longitude, my_data.latitude)
     
     map(lambda p: my_display.draw_pie_charts(p[0], ratios= my_data.get_ratios(p[0]), X=p[1], Y=p[2]), 
