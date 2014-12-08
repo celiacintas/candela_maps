@@ -10,7 +10,10 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 from matplotlib.collections import LineCollection
+import matplotlib.patches as patches
 from matplotlib import cm
+from matplotlib.path import Path
+from matplotlib.patches import PathPatch
 import shapefile
 import argparse
 import sys
@@ -36,9 +39,10 @@ class MapData(object):
         return df
 
     def load_ancestry(self, filename, columns, nrows):
-        """the file has to be CODE anc_0 anc_1 anc_2""""
+        """
+        the file has to be CODE anc_0 anc_1 anc_2
+        """
         df = pd.read_csv(filename, sep='\t', nrows=nrows)
-
         return df[columns]
 
     def get_ancestry_average_by_coordinates(self, name_ancestry):
@@ -50,14 +54,18 @@ class MapData(object):
         self.ancestry_avg = np.array(map(lambda i: np.average(i[1][name_ancestry].values) * 100, list_coord))
 
     def get_coordinates(self):
-        """give the coordinates to do the mesh (can't be duplicate data)"""
+        """
+        give the coordinates to do the mesh (can't be duplicate data)
+        """
         self.coordinates = self.df[['Lat', 'Lon']].drop_duplicates()
-
 
     def project_coordinates(self, m):
         self.coordinates['projected_lon'], self.coordinates['projected_lat'] = m(*(self.coordinates['Lon'].values, self.coordinates['Lat'].values))
 
     def interpolate(self, numcols=1000, numrows=1000):
+        """
+        Take the convex hull of all cordinates to generate a meshgrid
+        """
         xi = np.linspace(self.coordinates['projected_lon'].min(), self.coordinates['projected_lon'].max(), numcols)
         yi = np.linspace(self.coordinates['projected_lat'].min(), self.coordinates['projected_lat'].max(), numrows)
         xi, yi = np.meshgrid(xi, yi)
@@ -67,61 +75,37 @@ class MapData(object):
 
         return xi, yi, zi, x, y, z
 
-
-# TODO all this should move to a Map or View class
-def create_map(lllon, lllat, urlon, urlat):
-    """
-    """
-    map_ = Basemap(
-        projection = 'merc',
-        llcrnrlon = lllon, llcrnrlat = lllat, urcrnrlon = urlon, urcrnrlat = urlat,
-        resolution='h')
-    shp_info = map_.readshapefile('borders/COL_adm/COL_adm0', 'borders', drawbounds=True)
-
-    return map_
+class MainDisplay(object):
+    """docstring for MainDisplay"""
+    def __init__(self, lllon=-180, lllat=-80, urlon=0, urlat=40, figsize=(11.7,8.3), fileshape='borders/COL_adm/COL_adm0'):
+        super(MainDisplay, self).__init__()
+        plt.clf()
+        self.fig = plt.figure(figsize=figsize)
+        self.ax = self.fig.add_subplot(111, axisbg='w', frame_on=False)
+        self.anc_map = Basemap(projection = 'merc', llcrnrlon = lllon,
+                                llcrnrlat = lllat, urcrnrlon = urlon,
+                                urcrnrlat = urlat, resolution='h')
+        self.anc_map.readshapefile(fileshape, 'borders', drawbounds=False)
     
-def process_shapefile(filename_shp, my_map):
-    r = shapefile.Reader(filename_shp)
-    shapes = r.shapes()
- 
-    records = r.records()
-     
-    for record, shape in zip(records,shapes):
-        lons,lats = zip(*shape.points)
-        data = np.array(my_map(lons, lats)).T
-        print data
-        if len(shape.parts) == 1:
-            segs = [data,]
-        else:
-            segs = []
-            for i in range(1,len(shape.parts)):
-                index = shape.parts[i-1]
-                index2 = shape.parts[i]
-                segs.append(data[index:index2])
-            segs.append(data[index2:])
-     
-    lines = LineCollection(segs,antialiaseds=(1,))
-    lines.set_facecolors(cm.jet(np.random.rand(1)))
-    lines.set_edgecolors('k')
-    lines.set_linewidth(0.1)
-
-    return lines
-
-def draw(map_, xi, yi, zi, x, y, z, coordinates, ancestry, ax):
+    def draw(self, xi, yi, zi, x, y, z, coordinates, ancestry, shape_clip):
         """
         """
         norm = Normalize()
-        map_.drawmapboundary(fill_color = 'white')
-        map_.fillcontinents(color='#C0C0C0', lake_color='#7093DB')
-        map_.drawcountries(
+        self.anc_map.drawmapboundary(fill_color = 'white')
+        self.anc_map.fillcontinents(color='#C0C0C0', lake_color='#7093DB')
+        self.anc_map.drawcountries(
             linewidth=.75, linestyle='solid', color='#000073',
             antialiased=True,
-            ax=ax, zorder=3)
+            ax=self.ax, zorder=3)
 
         # contour plot
-        con = map_.contourf(xi, yi, zi, zorder=4, cmap='RdPu', levels=np.arange(round(z.min()), round(z.max()), 0.1))
+        con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='RdPu', levels=np.arange(round(z.min()), round(z.max()), 0.005))
+        # clip the data so only display the data inside of the country
+        for contour in con.collections:
+            contour.set_clip_path(shape_clip)
+
         # scatter plot
-        map_.scatter(
+        self.anc_map.scatter(
             coordinates['projected_lon'],
             coordinates['projected_lat'],
             color='#545454',
@@ -129,42 +113,59 @@ def draw(map_, xi, yi, zi, x, y, z, coordinates, ancestry, ax):
             alpha=.75,
             s=30 * norm(ancestry),
             cmap='RdPu',
-            ax=ax,
+            ax=self.ax,
             vmin=zi.min(), vmax=zi.max(), zorder=5)
 
         # add colour bar and title
-        cbar = map_.colorbar()
+        cbar = self.anc_map.colorbar()
+
+def process_shapefile(filename_shp, my_map, ax):
+    sf = shapefile.Reader(filename_shp)
+
+    for shape_rec in sf.shapeRecords():
+        vertices = []
+        codes = []
+        lons,lats = zip(*shape_rec.shape.points)
+        pts = np.array(my_map(lons, lats)).T
+        prt = list(shape_rec.shape.parts) + [len(pts)]
+        for i in range(len(prt) - 1):
+            for j in range(prt[i], prt[i+1]):
+                vertices.append((pts[j][0], pts[j][1]))
+            codes += [Path.MOVETO]
+            codes += [Path.LINETO] * (prt[i+1] - prt[i] -2)
+            codes += [Path.CLOSEPOLY]
+        clip = Path(vertices, codes)
+        clip = PathPatch(clip, transform=ax.transData)
+        print clip
+
+    return clip
 
 
-def main(filename_coord, filename_anc, columns):
+
+
+def main(filename_coord, filename_anc, column):
     """
     """
+    SHAPEFILE = 'borders/COL_adm/COL_adm0'
     # set up plot
-    plt.clf()
-    fig = plt.figure()
-    ax = fig.add_subplot(111, axisbg='w', frame_on=False)
-
-    map_data = MapData(filename_coord, filename_anc, columns, nrows=5000)
-    map_data.get_coordinates()
-    map_data.get_ancestry_average_by_coordinates(columns[1])
-
-    # define map extent
     lllon = -180
     lllat = -80
     urlon = 0
     urlat = 40
+    display = MainDisplay(lllon, lllat, urlon, urlat, fileshape=SHAPEFILE)
+    # load ancestry and location data
+    map_data = MapData(filename_coord, filename_anc, columns, nrows=5000)
+    map_data.get_coordinates()
+    map_data.get_ancestry_average_by_coordinates(columns[1])
 
-    my_map = create_map(lllon, lllat, urlon, urlat)
-    print my_map
-    map_data.project_coordinates(my_map)
+    map_data.project_coordinates(display.anc_map)
     xi, yi, zi, x, y, z = map_data.interpolate()
-    draw(my_map, xi, yi, zi, x, y, z, map_data.coordinates, map_data.ancestry_avg, ax)
-   
-    shape_lines = process_shapefile("borders/COL_adm/COL_adm0", my_map)
-    ax.add_collection(shape_lines)
+    shape_clip = process_shapefile(SHAPEFILE, display.anc_map, display.ax)
 
-    plt.title("Mean Anc {}".format(columns[1]))
-    plt.savefig("native.png", format="png", dpi=300, transparent=True)
+    display.draw(xi, yi, zi, x, y, z, map_data.coordinates, map_data.ancestry_avg, shape_clip)
+    
+    plt.title("Mean Anc {}".format(column[1]))
+    #plt.savefig("native_{}.png".format(column[1]), format="png", dpi=300, transparent=True)
     plt.show()
 
 if __name__ == '__main__':
@@ -186,5 +187,9 @@ if __name__ == '__main__':
         sys.exit(1)
     
     #TODO pass by parameter
-    columns = ['CODE', 'GBR']
+    #columns = ['CODE', 'SangerM-Nahua', 'Can-Mixe', 'Can-Mixtec', 'Can-Zapotec', 'Can-Kaqchikel', 'Can-Embera',
+    #'Can-Kogi', 'Can-Wayuu', 'Can-Aymara', 'Can-Quechua', 'SangerP-Quechua', 'Can-Chane', 'Can-Guarani',
+    #'Can-Wichi', 'CEU', 'GBR','IBS', 'TSI', 'LWK', 'MKK', 'YRI', 'CDX', 'CHB', 'CHS', 'JPT', 'KHV', 'GIH']
+    #columns = ['CODE', 'SangerM-Nahua', 'Can-Mixe', 'GBR','IBS', 'TSI']
+    columns = ['CODE', 'Can-Kogi']
     main(coord, anc, columns)
