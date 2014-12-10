@@ -2,13 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import numpy as np
-import pandas as pd
-
-from mpl_toolkits.basemap import Basemap, interp
-import matplotlib as mpl
+from mpl_toolkits.basemap import Basemap
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
-from matplotlib.collections import LineCollection
 import matplotlib.patches as patches
 from matplotlib import cm
 from matplotlib.path import Path
@@ -17,8 +13,6 @@ from mapdata import MapData
 import shapefile
 import argparse
 import sys
-
-
 
 class MainDisplay(object):
     """In this class we have the reference to our display map and the method of how to draw it."""
@@ -67,7 +61,7 @@ class MainDisplay(object):
         # add colour bar
         cbar = self.anc_map.colorbar()
 
-
+# TODO move this to an other module
 def process_shapefile(filename_shp, my_map, ax):
     # http://basemaptutorial.readthedocs.org/en/latest/clip.html
     sf = shapefile.Reader(filename_shp)
@@ -88,9 +82,6 @@ def process_shapefile(filename_shp, my_map, ax):
         clip = PathPatch(clip, transform=ax.transData)
 
     return clip
-
-
-
 
 def main(filename_coord, filename_anc, column):
     """
@@ -144,6 +135,5 @@ if __name__ == '__main__':
     #columns = ['CODE', 'SangerM-Nahua', 'Can-Mixe', 'Can-Mixtec', 'Can-Zapotec', 'Can-Kaqchikel', 'Can-Embera',
     #'Can-Kogi', 'Can-Wayuu', 'Can-Aymara', 'Can-Quechua', 'SangerP-Quechua', 'Can-Chane', 'Can-Guarani',
     #'Can-Wichi', 'CEU', 'GBR','IBS', 'TSI', 'LWK', 'MKK', 'YRI', 'CDX', 'CHB', 'CHS', 'JPT', 'KHV', 'GIH']
-    #columns = ['CODE', 'SangerM-Nahua', 'Can-Mixe', 'GBR','IBS', 'TSI']
     columns = ['CODE', 'IBS']
     main(coord, anc, columns)
