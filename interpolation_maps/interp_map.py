@@ -83,16 +83,16 @@ def process_shapefile(filename_shp, my_map, ax):
 
     return clip
 
-def main(filename_coord, filename_anc, column):
+def main(filename_coord, filename_anc, column, shapefile):
     """
     """
-    SHAPEFILE = 'borders/COL_adm/COL_adm0'
+    #SHAPEFILE = 'borders/COL_adm/COL_adm0'
     # set up plot
     lllon = -180
     lllat = -80
     urlon = 0
     urlat = 40
-    display = MainDisplay(lllon, lllat, urlon, urlat, fileshape=SHAPEFILE)
+    display = MainDisplay(lllon, lllat, urlon, urlat, fileshape=shapefile)
     # load ancestry and location data
     map_data = MapData(filename_coord, filename_anc, columns, nrows=5000)
     map_data.get_coordinates()
@@ -100,7 +100,7 @@ def main(filename_coord, filename_anc, column):
 
     map_data.project_coordinates(display.anc_map)
     xi, yi, zi, x, y, z = map_data.interpolate()
-    shape_clip = process_shapefile(SHAPEFILE, display.anc_map, display.ax)
+    shape_clip = process_shapefile(shapefile, display.anc_map, display.ax)
 
     display.draw(xi, yi, zi, x, y, z, map_data.coordinates, map_data.ancestry_avg, shape_clip)
     
@@ -130,10 +130,14 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
     
-    shapefile_dic = {'Colombia':'borders/COL_adm/COL_adm0'} #TODO complete this
+    shapefile_dic = {'Colombia':'borders/COL_adm/COL_adm0',
+                     'Brasil':'borders/BRA_adm/BRA_adm0',
+                     'Peru':'borders/PER_adm/PER_adm0',
+                     'Chile':'borders/CHL_adm/CHL_adm0',
+                     'Mexico':'borders/MEX_adm/MEX_adm0'} #TODO complete this
     #TODO pass by parameter
     #columns = ['CODE', 'SangerM-Nahua', 'Can-Mixe', 'Can-Mixtec', 'Can-Zapotec', 'Can-Kaqchikel', 'Can-Embera',
     #'Can-Kogi', 'Can-Wayuu', 'Can-Aymara', 'Can-Quechua', 'SangerP-Quechua', 'Can-Chane', 'Can-Guarani',
     #'Can-Wichi', 'CEU', 'GBR','IBS', 'TSI', 'LWK', 'MKK', 'YRI', 'CDX', 'CHB', 'CHS', 'JPT', 'KHV', 'GIH']
-    columns = ['CODE', 'IBS']
-    main(coord, anc, columns)
+    columns = ['CODE', 'Can-Zapotec']
+    main(coord, anc, columns, shapefile_dic[country])
