@@ -16,7 +16,7 @@ import sys
 
 class MainDisplay(object):
     """In this class we have the reference to our display map and the method of how to draw it."""
-    def __init__(self, lllon=-180, lllat=-80, urlon=0, urlat=40, figsize=(11.7,8.3), fileshape='borders/COL_adm/COL_adm0'):
+    def __init__(self, lllon=-180, lllat=-80, urlon=0, urlat=40, figsize=(11.7,8.3), files_shape=['borders/COL_adm/COL_adm0']):
         super(MainDisplay, self).__init__()
         plt.clf()
         self.fig = plt.figure(figsize=figsize)
@@ -24,7 +24,8 @@ class MainDisplay(object):
         self.anc_map = Basemap(projection = 'merc', llcrnrlon = lllon,
                                 llcrnrlat = lllat, urcrnrlon = urlon,
                                 urcrnrlat = urlat, resolution='h')
-        self.anc_map.readshapefile(fileshape, 'borders', drawbounds=False, linewidth=0.8)
+        map(lambda country_fileshape: self.anc_map.readshapefile(country_fileshape, 'borders', drawbounds=False, linewidth=0.8),
+            files_shape)
     
     def draw(self, xi, yi, zi, x, y, z, coordinates, ancestry, shape_clip):
         """
@@ -64,8 +65,7 @@ class MainDisplay(object):
 # TODO move this to an other module
 def process_shapefile(filename_shp, my_map, ax):
     # http://basemaptutorial.readthedocs.org/en/latest/clip.html
-    sf = shapefile.Reader(filename_shp)
-
+    sf = shapefile.Reader(filename_shp) #nasty
     for shape_rec in sf.shapeRecords():
         vertices = []
         codes = []
@@ -88,22 +88,23 @@ def main(filename_coord, filename_anc, column, shapefile):
     """
     #SHAPEFILE = 'borders/COL_adm/COL_adm0'
     # set up plot
-    lllon = -180
-    lllat = -80
-    urlon = 0
+    lllon = -120 
+    lllat = -70
+    urlon = -20
     urlat = 40
-    display = MainDisplay(lllon, lllat, urlon, urlat, fileshape=shapefile)
+    display = MainDisplay(lllon, lllat, urlon, urlat, files_shape=shapefile)
     # load ancestry and location data
-    map_data = MapData(filename_coord, filename_anc, columns, nrows=5000)
-    map_data.get_coordinates()
-    map_data.get_ancestry_average_by_coordinates(columns[1])
+    for country, anc in zip(shapefile, filename_anc):
+        map_data = MapData(filename_coord, anc, columns, nrows=5000)
+        map_data.get_coordinates()
+        map_data.get_ancestry_average_by_coordinates(columns[1])
 
-    map_data.project_coordinates(display.anc_map)
-    xi, yi, zi, x, y, z = map_data.interpolate()
-    shape_clip = process_shapefile(shapefile, display.anc_map, display.ax)
+        map_data.project_coordinates(display.anc_map)
+        xi, yi, zi, x, y, z = map_data.interpolate()
+        shape_clip = process_shapefile(country, display.anc_map, display.ax)
 
-    display.draw(xi, yi, zi, x, y, z, map_data.coordinates, map_data.ancestry_avg, shape_clip)
-    
+        display.draw(xi, yi, zi, x, y, z, map_data.coordinates, map_data.ancestry_avg, shape_clip)
+        
     plt.title("Mean Anc {}".format(column[1]))
     #plt.savefig("native_{}.png".format(column[1]), format="png", dpi=300, transparent=True)
     plt.show()
@@ -113,9 +114,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description= 'Interpolation Maps for ..')
     parser.add_argument("--coor", dest="coordinate", default=None,
                         help='Pass the path to the txt file with lat lon and code')
-    parser.add_argument("--anc", dest="ancestry", default=None,
+    parser.add_argument("--anc", dest="ancestry", default=None, nargs='+',
                         help='Pass the path to the txt file with ancestry and code')
-    parser.add_argument("--country", dest="country", default='Colombia',
+    parser.add_argument("--country", dest="country", default='Colombia', nargs='+',
                         help='Pass the name of the country you want to display')
 
     args = parser.parse_args()
@@ -125,7 +126,7 @@ if __name__ == '__main__':
     if args.ancestry:
         anc = args.ancestry
     if args.country:
-        country = args.country
+        countries = args.country
     else:
         parser.print_help()
         sys.exit(1)
@@ -139,5 +140,7 @@ if __name__ == '__main__':
     #columns = ['CODE', 'SangerM-Nahua', 'Can-Mixe', 'Can-Mixtec', 'Can-Zapotec', 'Can-Kaqchikel', 'Can-Embera',
     #'Can-Kogi', 'Can-Wayuu', 'Can-Aymara', 'Can-Quechua', 'SangerP-Quechua', 'Can-Chane', 'Can-Guarani',
     #'Can-Wichi', 'CEU', 'GBR','IBS', 'TSI', 'LWK', 'MKK', 'YRI', 'CDX', 'CHB', 'CHS', 'JPT', 'KHV', 'GIH']
-    columns = ['CODE', 'Can-Zapotec']
-    main(coord, anc, columns, shapefile_dic[country])
+    columns = ['CODE', 'GBR']
+    shape_files = map(lambda country: shapefile_dic[country], countries)
+    print shape_files
+    main(coord, anc, columns, shape_files)
