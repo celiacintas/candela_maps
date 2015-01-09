@@ -3,6 +3,7 @@
 import pandas as pd
 import numpy as np
 from matplotlib.mlab import griddata
+from scipy.interpolate import Rbf
 
 class MapData(object):
     """
@@ -48,15 +49,19 @@ class MapData(object):
     def project_coordinates(self, m):
         self.coordinates['projected_lon'], self.coordinates['projected_lat'] = m(*(self.coordinates['Lon'].values, self.coordinates['Lat'].values))
 
-    def interpolate(self, numcols=1000, numrows=1000):
+    def interpolate(self, numcols=1500, numrows=1500):
         """
         Take the convex hull of all cordinates to generate a meshgrid
         """
-        xi = np.linspace(self.coordinates['projected_lon'].min(), self.coordinates['projected_lon'].max(), numcols)
+       
+        xi = np.linspace(100000, self.coordinates['projected_lon'].max(), numcols) #nasty fix
+        #TODO make a dic with the coord of the countries :D
         yi = np.linspace(self.coordinates['projected_lat'].min(), self.coordinates['projected_lat'].max(), numrows)
         xi, yi = np.meshgrid(xi, yi)
-        # interpolate
+        # interpolate 
+        # TODO search for other interpolation types
         x, y, z = self.coordinates['projected_lon'].values, self.coordinates['projected_lat'].values, self.ancestry_avg
-        zi = griddata(x, y, z, xi, yi)
-
+        interp = Rbf(x, y, z, function='linear', smooth=0.1)
+        zi = interp(xi, yi)
+        
         return xi, yi, zi, x, y, z
