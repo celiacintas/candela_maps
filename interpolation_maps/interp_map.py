@@ -42,7 +42,8 @@ class MainDisplay(object):
 
         # contour plot
         con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='jet', levels=np.arange(-0.9, round(z.max()), 0.005))
-        #check alpha parameter for areas without data
+        # check alpha parameter for areas without data
+        # TODO fix the levels .. hardcoded number for now 
         # clip the data so only display the data inside of the country
         for contour in con.collections:
             contour.set_clip_path(shape_clip)
