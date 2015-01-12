@@ -46,17 +46,21 @@ class MapData(object):
         """
         self.coordinates = self.df[['Lat', 'Lon']].drop_duplicates()
 
-    def project_coordinates(self, m):
+    def project_coordinates(self, m, boundry_country):
+        print boundry_country['Lon']
         self.coordinates['projected_lon'], self.coordinates['projected_lat'] = m(*(self.coordinates['Lon'].values, self.coordinates['Lat'].values))
+        self.tmp_bound_lon, self.tmp_bound_lat = m(*(boundry_country['Lon'], boundry_country['Lat']))
+
 
     def interpolate(self, numcols=1500, numrows=1500):
         """
         Take the convex hull of all cordinates to generate a meshgrid
         """
        
-        xi = np.linspace(100000, self.coordinates['projected_lon'].max(), numcols) #nasty fix
+        xi = np.linspace(min(self.tmp_bound_lon), max(self.tmp_bound_lon), numcols) #nasty fix
         #TODO make a dic with the coord of the countries :D
-        yi = np.linspace(self.coordinates['projected_lat'].min(), self.coordinates['projected_lat'].max(), numrows)
+        yi = np.linspace(min(self.tmp_bound_lat), max(self.tmp_bound_lat), numrows)
+        #yi = np.linspace(self.coordinates['projected_lat'].min(), self.coordinates['projected_lat'].max(), numrows)
         xi, yi = np.meshgrid(xi, yi)
         # interpolate 
         # TODO search for other interpolation types

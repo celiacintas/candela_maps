@@ -84,7 +84,7 @@ def process_shapefile(filename_shp, my_map, ax):
 
     return clip
 
-def main(filename_coord, filename_anc, column, shapefile):
+def main(filename_coord, filename_anc, column, shapefile, boundry_lines):
     """
     """
     #SHAPEFILE = 'borders/COL_adm/COL_adm0'
@@ -95,12 +95,12 @@ def main(filename_coord, filename_anc, column, shapefile):
     urlat = 40
     display = MainDisplay(lllon, lllat, urlon, urlat, files_shape=shapefile)
     # load ancestry and location data
-    for country, anc in zip(shapefile, filename_anc):
+    for country, anc, boundry_rect in zip(shapefile, filename_anc, boundry_lines):
         map_data = MapData(filename_coord, anc, columns, nrows=5000)
         map_data.get_coordinates()
         map_data.get_ancestry_average_by_coordinates(columns[1])
 
-        map_data.project_coordinates(display.anc_map)
+        map_data.project_coordinates(display.anc_map, boundry_rect) # pass the rect of the country
         xi, yi, zi, x, y, z = map_data.interpolate()
         shape_clip = process_shapefile(country, display.anc_map, display.ax)
 
@@ -136,12 +136,24 @@ if __name__ == '__main__':
                      'Brasil':'borders/BRA_adm/BRA_adm0',
                      'Peru':'borders/PER_adm/PER_adm0',
                      'Chile':'borders/CHL_adm/CHL_adm0',
-                     'Mexico':'borders/MEX_adm/MEX_adm0'} #TODO complete this
+                     'Mexico':'borders/MEX_adm/MEX_adm0'}
+    # TODO this should be the same dict
+    boundry_dic ={'Colombia':{'Lat':[12.168226, 12.168226, -5.266008, -4.828260],
+                              'Lon':[-82.968750, -70.004883, -81.782227, -64.775391]},
+                  'Brasil':{'Lat':[],
+                            'Lon':[]},
+                  'Peru':{'Lat':[],
+                            'Lon':[]},
+                  'Chile':{'Lat':[],
+                            'Lon':[]},
+                  'Mexico':{'Lat':[35.889050, 35.889050, 8.581021, 14.434680],
+                            'Lon':[-124.980469, -84.023438, -120.585938, -80.156250]}
+                 }
     #TODO pass by parameter
     #columns = ['CODE', 'SangerM-Nahua', 'Can-Mixe', 'Can-Mixtec', 'Can-Zapotec', 'Can-Kaqchikel', 'Can-Embera',
     #'Can-Kogi', 'Can-Wayuu', 'Can-Aymara', 'Can-Quechua', 'SangerP-Quechua', 'Can-Chane', 'Can-Guarani',
     #'Can-Wichi', 'CEU', 'GBR','IBS', 'TSI', 'LWK', 'MKK', 'YRI', 'CDX', 'CHB', 'CHS', 'JPT', 'KHV', 'GIH']
-    columns = ['CODE', 'GBR']
+    columns = ['CODE', 'TSI']
     shape_files = map(lambda country: shapefile_dic[country], countries)
-    print shape_files
-    main(coord, anc, columns, shape_files)
+    boundry_lines = map(lambda bound_rect: boundry_dic[bound_rect], countries)
+    main(coord, anc, columns, shape_files, boundry_lines)
