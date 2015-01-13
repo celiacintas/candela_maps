@@ -47,14 +47,13 @@ class MapData(object):
         self.coordinates = self.df[['Lat', 'Lon']].drop_duplicates()
 
     def project_coordinates(self, m, boundry_country):
-        print boundry_country['Lon']
         self.coordinates['projected_lon'], self.coordinates['projected_lat'] = m(*(self.coordinates['Lon'].values, self.coordinates['Lat'].values))
-        self.tmp_bound_lon, self.tmp_bound_lat = m(*(boundry_country['Lon'], boundry_country['Lat']))
+        self.tmp_bound_lon, self.tmp_bound_lat = m(*(boundry_country['lon'], boundry_country['lat']))
 
 
     def interpolate(self, numcols=1500, numrows=1500):
         """
-        Take the convex hull of all cordinates to generate a meshgrid
+        Take the boundry rect projected of the country to generate a meshgrid 
         """
        
         xi = np.linspace(min(self.tmp_bound_lon), max(self.tmp_bound_lon), numcols) #nasty fix

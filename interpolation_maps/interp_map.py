@@ -41,7 +41,8 @@ class MainDisplay(object):
             ax=self.ax, zorder=3)
 
         # contour plot
-        con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='jet', levels=np.arange(-0.9, round(z.max()), 0.005))
+        con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='jet', levels=np.arange(-0.9, round(z.max()), 0.005),
+                                    antialiased=True)
         # check alpha parameter for areas without data
         # TODO fix the levels .. hardcoded number for now 
         # clip the data so only display the data inside of the country
@@ -59,7 +60,7 @@ class MainDisplay(object):
             cmap='RdPu',
             ax=self.ax,
             vmin=zi.min(), vmax=zi.max(), zorder=5)
-
+        
         # add colour bar
         cbar = self.anc_map.colorbar()
 
@@ -132,28 +133,29 @@ if __name__ == '__main__':
         parser.print_help()
         sys.exit(1)
     
-    shapefile_dic = {'Colombia':'borders/COL_adm/COL_adm0',
-                     'Brasil':'borders/BRA_adm/BRA_adm0',
-                     'Peru':'borders/PER_adm/PER_adm0',
-                     'Chile':'borders/CHL_adm/CHL_adm0',
-                     'Mexico':'borders/MEX_adm/MEX_adm0'}
-    # TODO this should be the same dict
-    boundry_dic ={'Colombia':{'Lat':[12.168226, 12.168226, -5.266008, -4.828260],
-                              'Lon':[-82.968750, -70.004883, -81.782227, -64.775391]},
-                  'Brasil':{'Lat':[],
-                            'Lon':[]},
-                  'Peru':{'Lat':[],
-                            'Lon':[]},
-                  'Chile':{'Lat':[],
-                            'Lon':[]},
-                  'Mexico':{'Lat':[35.889050, 35.889050, 8.581021, 14.434680],
-                            'Lon':[-124.980469, -84.023438, -120.585938, -80.156250]}
-                 }
+    # TODO this should be in json file 
+    hardcoded_dic = {'Colombia':{'lat':[14.168226, 18.168226, -5.266008, -4.828260],
+                              'lon':[-82.968750, -70.004883, -81.782227, -64.775391],
+                              'file_shape':'borders/COL_adm/COL_adm0'},
+                  'Brasil':{'lat':[3.688855, 5.266008, -35.746512, -36.315125],
+                            'lon':[-75.410156, -29.355469, -81.210938, -40.957031],
+                            'file_shape':'borders/BRA_adm/BRA_adm0'},
+                  'Peru':{'lat':[0.439449, 0.439449, -17.978733, -20.978733],
+                            'lon':[-84.902344, -67.675781, -82.265625, -63.544922],
+                            'file_shape':'borders/PER_adm/PER_adm0'},
+                  'Chile':{'lat':[-16.636192, -17.140790, -56.559482, -56.848972],
+                            'lon':[-74.003906, -66.796875, -80.992188, -62.578125],
+                            'file_shape':'borders/CHL_adm/CHL_adm0'},
+                  'Mexico':{'lat':[35.889050, 35.889050, 8.581021, 14.434680],
+                            'lon':[-124.980469, -84.023438, -120.585938, -80.156250],
+                            'file_shape':'borders/MEX_adm/MEX_adm0'}
+                    }
     #TODO pass by parameter
     #columns = ['CODE', 'SangerM-Nahua', 'Can-Mixe', 'Can-Mixtec', 'Can-Zapotec', 'Can-Kaqchikel', 'Can-Embera',
     #'Can-Kogi', 'Can-Wayuu', 'Can-Aymara', 'Can-Quechua', 'SangerP-Quechua', 'Can-Chane', 'Can-Guarani',
     #'Can-Wichi', 'CEU', 'GBR','IBS', 'TSI', 'LWK', 'MKK', 'YRI', 'CDX', 'CHB', 'CHS', 'JPT', 'KHV', 'GIH']
-    columns = ['CODE', 'TSI']
-    shape_files = map(lambda country: shapefile_dic[country], countries)
-    boundry_lines = map(lambda bound_rect: boundry_dic[bound_rect], countries)
+    columns = ['CODE', 'Can-Zapotec']
+    shape_files = map(lambda country: hardcoded_dic[country]['file_shape'], countries)
+    boundry_lines = map(lambda bound_rect: dict((k, hardcoded_dic[bound_rect][k]) for k in ('lat', 'lon')), countries)
+    print boundry_lines
     main(coord, anc, columns, shape_files, boundry_lines)
