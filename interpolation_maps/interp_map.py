@@ -27,7 +27,7 @@ class MainDisplay(object):
         map(lambda country_fileshape: self.anc_map.readshapefile(country_fileshape, 'borders', drawbounds=False, linewidth=0.8),
             files_shape)
     
-    def draw(self, xi, yi, zi, x, y, z, coordinates, ancestry, shape_clip):
+    def draw(self, xi, yi, zi, x, y, z, coordinates, ancestry, shape_clip, level_min, level_max):
         """
         This methods display the ancestry data from the MapData class, in this
         method you can setup the color display and resolution of the map.
@@ -41,7 +41,7 @@ class MainDisplay(object):
             ax=self.ax, zorder=3)
 
         # contour plot
-        con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='jet', levels=np.arange(-0.9, round(z.max()), 0.005),
+        con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='jet', levels=np.arange(level_min, level_max, 0.005),
                                     antialiased=True)
         # check alpha parameter for areas without data
         # TODO fix the levels .. hardcoded number for now 
@@ -62,6 +62,9 @@ class MainDisplay(object):
             vmin=zi.min(), vmax=zi.max(), zorder=5)
         
         # add colour bar
+        
+
+    def add_colorbar(self):
         cbar = self.anc_map.colorbar()
 
 # TODO move this to an other module
@@ -95,6 +98,8 @@ def main(filename_coord, filename_anc, column, shapefile, boundry_lines):
     urlon = -20
     urlat = 40
     display = MainDisplay(lllon, lllat, urlon, urlat, files_shape=shapefile)
+
+    level_min, level_max = 0.0, 8.2
     # load ancestry and location data
     for country, anc, boundry_rect in zip(shapefile, filename_anc, boundry_lines):
         map_data = MapData(filename_coord, anc, columns, nrows=5000)
@@ -105,8 +110,9 @@ def main(filename_coord, filename_anc, column, shapefile, boundry_lines):
         xi, yi, zi, x, y, z = map_data.interpolate()
         shape_clip = process_shapefile(country, display.anc_map, display.ax)
 
-        display.draw(xi, yi, zi, x, y, z, map_data.coordinates, map_data.ancestry_avg, shape_clip)
-        
+        display.draw(xi, yi, zi, x, y, z, map_data.coordinates, map_data.ancestry_avg, shape_clip, level_min, level_max)
+    display.add_colorbar()
+
     plt.title("Mean Anc {}".format(column[1]))
     #plt.savefig("native_{}.png".format(column[1]), format="png", dpi=300, transparent=True)
     plt.show()
@@ -134,8 +140,8 @@ if __name__ == '__main__':
         sys.exit(1)
     
     # TODO this should be in json file 
-    hardcoded_dic = {'Colombia':{'lat':[14.168226, 18.168226, -5.266008, -4.828260],
-                              'lon':[-82.968750, -70.004883, -81.782227, -64.775391],
+    hardcoded_dic = {'Colombia':{'lat':[14.168226, 16.168226, -5.266008, -4.828260],
+                              'lon':[-82.968750, -70.004883, -81.782227, -66.775391],
                               'file_shape':'borders/COL_adm/COL_adm0'},
                   'Brasil':{'lat':[3.688855, 5.266008, -35.746512, -36.315125],
                             'lon':[-75.410156, -29.355469, -81.210938, -40.957031],

@@ -130,8 +130,8 @@ def main():
     
     #my_data.get_clusters(my_data.populations_ind.keys()[0])
     x,y = my_map(my_data.longitude, my_data.latitude)
-    
-    map(lambda p: my_display.draw_pie_charts(p[0], ratios= my_data.get_ratios(p[0]), X=p[1], Y=p[2]), 
+    #TODO make filter
+    map(lambda p: my_display.draw_pie_charts(p[0], ratios=my_data.get_ratios(p[0]), X=p[1], Y=p[2]), 
         zip(my_data.populations, x, y))
 
     
