@@ -12,6 +12,7 @@ from matplotlib.patches import PathPatch
 from mapdata import MapData
 import shapefile
 import argparse
+import json
 import sys
 
 class MainDisplay(object):
@@ -41,8 +42,8 @@ class MainDisplay(object):
             ax=self.ax, zorder=3)
 
         # contour plot
-        con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='jet', levels=np.arange(level_min, level_max, 0.005),
-                                    antialiased=True)
+        con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='jet',
+                                    levels=np.arange(level_min, level_max,0.005), antialiased=True)
         # check alpha parameter for areas without data
         # TODO fix the levels .. hardcoded number for now 
         # clip the data so only display the data inside of the country
@@ -99,6 +100,7 @@ def main(filename_coord, filename_anc, column, shapefile, boundry_lines):
     urlat = 40
     display = MainDisplay(lllon, lllat, urlon, urlat, files_shape=shapefile)
 
+    # TODO calculate this on the mapdata module
     level_min, level_max = 0.0, 8.2
     # load ancestry and location data
     for country, anc, boundry_rect in zip(shapefile, filename_anc, boundry_lines):
@@ -122,7 +124,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description= 'Interpolation Maps for ..')
     parser.add_argument("--coor", dest="coordinate", default=None,
                         help='Pass the path to the txt file with lat lon and code')
-    parser.add_argument("--anc", dest="ancestry", default=None, nargs='+',
+    parser.add_argument("--anc_name", dest="ancestry", default=None, nargs='+',
+                        help='Pass the path to the txt file with ancestry and code')
+    parser.add_argument("--cluster_percentage", dest="cluster", default='GBR',
                         help='Pass the path to the txt file with ancestry and code')
     parser.add_argument("--country", dest="country", default='Colombia', nargs='+',
                         help='Pass the name of the country you want to display')
@@ -138,30 +142,17 @@ if __name__ == '__main__':
     else:
         parser.print_help()
         sys.exit(1)
+
+    with open('data/border_data.json') as json_data:
+        hardcoded_dic = json.load(json_data)
     
-    # TODO this should be in json file 
-    hardcoded_dic = {'Colombia':{'lat':[14.168226, 16.168226, -5.266008, -4.828260],
-                              'lon':[-82.968750, -70.004883, -81.782227, -66.775391],
-                              'file_shape':'borders/COL_adm/COL_adm0'},
-                  'Brasil':{'lat':[3.688855, 5.266008, -35.746512, -36.315125],
-                            'lon':[-75.410156, -29.355469, -81.210938, -40.957031],
-                            'file_shape':'borders/BRA_adm/BRA_adm0'},
-                  'Peru':{'lat':[0.439449, 0.439449, -17.978733, -20.978733],
-                            'lon':[-84.902344, -67.675781, -82.265625, -63.544922],
-                            'file_shape':'borders/PER_adm/PER_adm0'},
-                  'Chile':{'lat':[-16.636192, -17.140790, -56.559482, -56.848972],
-                            'lon':[-74.003906, -66.796875, -80.992188, -62.578125],
-                            'file_shape':'borders/CHL_adm/CHL_adm0'},
-                  'Mexico':{'lat':[35.889050, 35.889050, 8.581021, 14.434680],
-                            'lon':[-124.980469, -84.023438, -120.585938, -80.156250],
-                            'file_shape':'borders/MEX_adm/MEX_adm0'}
-                    }
-    #TODO pass by parameter
-    #columns = ['CODE', 'SangerM-Nahua', 'Can-Mixe', 'Can-Mixtec', 'Can-Zapotec', 'Can-Kaqchikel', 'Can-Embera',
-    #'Can-Kogi', 'Can-Wayuu', 'Can-Aymara', 'Can-Quechua', 'SangerP-Quechua', 'Can-Chane', 'Can-Guarani',
-    #'Can-Wichi', 'CEU', 'GBR','IBS', 'TSI', 'LWK', 'MKK', 'YRI', 'CDX', 'CHB', 'CHS', 'JPT', 'KHV', 'GIH']
-    columns = ['CODE', 'Can-Zapotec']
+    """
+    clusters availables from Camilo's file
+    'SangerM-Nahua', 'Can-Mixe', 'Can-Mixtec', 'Can-Zapotec', 'Can-Kaqchikel', 'Can-Embera',
+    'Can-Kogi', 'Can-Wayuu', 'Can-Aymara', 'Can-Quechua', 'SangerP-Quechua', 'Can-Chane', 'Can-Guarani',
+    'Can-Wichi', 'CEU', 'GBR','IBS', 'TSI', 'LWK', 'MKK', 'YRI', 'CDX', 'CHB', 'CHS', 'JPT', 'KHV', 'GIH'
+    """
+    columns = ['CODE', args.cluster]
     shape_files = map(lambda country: hardcoded_dic[country]['file_shape'], countries)
     boundry_lines = map(lambda bound_rect: dict((k, hardcoded_dic[bound_rect][k]) for k in ('lat', 'lon')), countries)
-    print boundry_lines
     main(coord, anc, columns, shape_files, boundry_lines)
