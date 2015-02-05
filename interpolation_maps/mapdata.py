@@ -51,7 +51,7 @@ class MapData(object):
         self.tmp_bound_lon, self.tmp_bound_lat = m(*(boundry_country['lon'], boundry_country['lat']))
 
 
-    def interpolate(self, numcols=1500, numrows=1500):
+    def interpolate(self, numcols=1000, numrows=1000):
         """
         Take the boundry rect projected of the country to generate a meshgrid 
         """
