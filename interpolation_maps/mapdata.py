@@ -4,6 +4,20 @@ import pandas as pd
 import numpy as np
 from matplotlib.mlab import griddata
 from scipy.interpolate import Rbf
+from sklearn.gaussian_process import GaussianProcess
+
+def estimated_autocorrelation(x):
+    """
+    http://stackoverflow.com/q/14297012/190597
+    http://en.wikipedia.org/wiki/Autocorrelation#Estimation
+    """
+    n = len(x)
+    variance = x.var()
+    x = x-x.mean()
+    r = np.correlate(x, x, mode = 'full')[-n:]
+    assert np.allclose(r, np.array([(x[:n-k]*x[-(n-k):]).sum() for k in range(n)]))
+    result = r/(variance*(np.arange(n, 0, -1)))
+    return result
 
 class MapData(object):
     """
@@ -51,20 +65,26 @@ class MapData(object):
         self.tmp_bound_lon, self.tmp_bound_lat = m(*(boundry_country['lon'], boundry_country['lat']))
 
 
-    def interpolate(self, numcols=1000, numrows=1000):
+    def interpolate(self, numcols=900, numrows=900):
         """
         Take the boundry rect projected of the country to generate a meshgrid 
         """
        
         xi = np.linspace(min(self.tmp_bound_lon), max(self.tmp_bound_lon), numcols) #nasty fix
-        #TODO make a dic with the coord of the countries :D
         yi = np.linspace(min(self.tmp_bound_lat), max(self.tmp_bound_lat), numrows)
-        #yi = np.linspace(self.coordinates['projected_lat'].min(), self.coordinates['projected_lat'].max(), numrows)
         xi, yi = np.meshgrid(xi, yi)
+
         # interpolate 
         # TODO search for other interpolation types
         x, y, z = self.coordinates['projected_lon'].values, self.coordinates['projected_lat'].values, self.ancestry_avg
-        interp = Rbf(x, y, z, function='linear', smooth=0.1)
-        zi = interp(xi, yi)
+        #interp = Rbf(x, y, z, function='linear', smooth=0.1)
+        #zi = interp(xi, yi)
         
+        # Kriging interpolation
+        gp = GaussianProcess(theta0=10., thetaL=10., thetaU=100., nugget=0.01, verbose=True)
+        gp.fit(X=np.column_stack([x,y]), y=z)
+        rr_cc_as_cols = np.column_stack([xi.flatten(), yi.flatten()])
+        zi = gp.predict(rr_cc_as_cols).reshape(yi.shape)
+
         return xi, yi, zi, x, y, z
+

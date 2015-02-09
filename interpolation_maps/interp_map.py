@@ -43,7 +43,7 @@ class MainDisplay(object):
 
         # contour plot
         con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='jet',
-                                    levels=np.arange(level_min, level_max,0.05), antialiased=True)
+                                    levels=np.arange(z.min(), z.max(),0.05), antialiased=True)
         # check alpha parameter for areas without data
         # TODO fix the levels .. hardcoded number for now 
         # clip the data so only display the data inside of the country
@@ -104,7 +104,7 @@ def main(filename_coord, filename_anc, column, shapefile, boundry_lines):
     level_min, level_max = -1.0, 70.2
     # load ancestry and location data
     for country, anc, boundry_rect in zip(shapefile, filename_anc, boundry_lines):
-        map_data = MapData(filename_coord, anc, columns, nrows=5000)
+        map_data = MapData(filename_coord, anc, columns, nrows=500)
         map_data.get_coordinates()
         map_data.get_ancestry_average_by_coordinates(columns[1])
 
