@@ -40,10 +40,10 @@ class MainDisplay(object):
             linewidth=.75, linestyle='solid', color='#000073',
             antialiased=True,
             ax=self.ax, zorder=3)
-
+        
         # contour plot
-        con = self.anc_map.contourf(xi, yi, zi, zorder=5, cmap='jet',
-                                    levels=np.arange(z.min(), z.max(),0.05), antialiased=True)
+        con = self.anc_map.contourf(xi, yi, zi, zorder=5, levels=np.arange(0.0, 100., 9.)) #, cmap='jet',
+                                    #levels=np.arange(0.0001, z.max(), 0.05), antialiased=True)
         # check alpha parameter for areas without data
         # TODO fix the levels .. hardcoded number for now 
         # clip the data so only display the data inside of the country
@@ -57,11 +57,11 @@ class MainDisplay(object):
             color='#545454',
             edgecolor='#ffffff',
             alpha=.75,
-            s=30 * norm(ancestry),
+            s=30, #* norm(ancestry),
             cmap='RdPu',
             ax=self.ax,
             vmin=zi.min(), vmax=zi.max(), zorder=5)
-        
+
         # add colour bar
         
 
@@ -92,7 +92,6 @@ def process_shapefile(filename_shp, my_map, ax):
 def main(filename_coord, filename_anc, column, shapefile, boundry_lines):
     """
     """
-    #SHAPEFILE = 'borders/COL_adm/COL_adm0'
     # set up plot
     lllon = -120 
     lllat = -70
@@ -104,7 +103,7 @@ def main(filename_coord, filename_anc, column, shapefile, boundry_lines):
     level_min, level_max = -1.0, 70.2
     # load ancestry and location data
     for country, anc, boundry_rect in zip(shapefile, filename_anc, boundry_lines):
-        map_data = MapData(filename_coord, anc, columns, nrows=500)
+        map_data = MapData(filename_coord, anc, columns)
         map_data.get_coordinates()
         map_data.get_ancestry_average_by_coordinates(columns[1])
 

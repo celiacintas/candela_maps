@@ -5,19 +5,9 @@ import numpy as np
 from matplotlib.mlab import griddata
 from scipy.interpolate import Rbf
 from sklearn.gaussian_process import GaussianProcess
-
-def estimated_autocorrelation(x):
-    """
-    http://stackoverflow.com/q/14297012/190597
-    http://en.wikipedia.org/wiki/Autocorrelation#Estimation
-    """
-    n = len(x)
-    variance = x.var()
-    x = x-x.mean()
-    r = np.correlate(x, x, mode = 'full')[-n:]
-    assert np.allclose(r, np.array([(x[:n-k]*x[-(n-k):]).sum() for k in range(n)]))
-    result = r/(variance*(np.arange(n, 0, -1)))
-    return result
+from statsmodels.tsa.stattools import acf
+import matplotlib.pyplot as plt
+import sys
 
 class MapData(object):
     """
@@ -32,6 +22,7 @@ class MapData(object):
         df_coordinates = self.load_coordinates(filename_coor)
         df_ancestry = self.load_ancestry(filename_anc, columns, nrows)
         self.df = pd.merge(df_coordinates, df_ancestry, on=['CODE'])
+        self.df.to_csv('jijiji.txt', index=False)
 
     def load_coordinates(self, filename):
         """the file has to be CODE Lat Lon """
@@ -65,7 +56,7 @@ class MapData(object):
         self.tmp_bound_lon, self.tmp_bound_lat = m(*(boundry_country['lon'], boundry_country['lat']))
 
 
-    def interpolate(self, numcols=900, numrows=900):
+    def interpolate(self, numcols=50, numrows=50):
         """
         Take the boundry rect projected of the country to generate a meshgrid 
         """
@@ -76,15 +67,32 @@ class MapData(object):
 
         # interpolate 
         # TODO search for other interpolation types
+
         x, y, z = self.coordinates['projected_lon'].values, self.coordinates['projected_lat'].values, self.ancestry_avg
-        #interp = Rbf(x, y, z, function='linear', smooth=0.1)
-        #zi = interp(xi, yi)
+        interp = Rbf(x, y, z, function='inverse', smooth=0.1)
+        zi = interp(xi, yi)
         
-        # Kriging interpolation
-        gp = GaussianProcess(theta0=10., thetaL=10., thetaU=100., nugget=0.01, verbose=True)
-        gp.fit(X=np.column_stack([x,y]), y=z)
+        zi = zi.clip(0)
+        #print zi
+        # Kriging interpolaiion
+        """gp = GaussianProcess(regr='constant', corr='absolute_exponential',
+                  theta0=0.01, nugget=0.082864)
+        print gp.fit(X=np.column_stack([x,y]), y=z)
         rr_cc_as_cols = np.column_stack([xi.flatten(), yi.flatten()])
         zi = gp.predict(rr_cc_as_cols).reshape(yi.shape)
+        
+        # this is for selecting the best parameter
+        from sklearn.grid_search import GridSearchCV
+
+        gp = GaussianProcess()
+        parameter_grid = {'theta0': np.logspace(-7, 0), 'nugget': np.logspace(-5, 3)}
+        cv = GridSearchCV(gp, parameter_grid, scoring='mean_squared_error')
+        cv.fit(X=np.column_stack([x,y]), y=z)
+        gp_best = GaussianProcess(**cv.best_params_)
+        gp_best.fit(X=np.column_stack([x,y]), y=z)
+        print cv.best_params_
+        """
 
         return xi, yi, zi, x, y, z
+
 
