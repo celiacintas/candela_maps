@@ -26,7 +26,7 @@ class MapData(object):
 
     def load_coordinates(self, filename):
         """the file has to be CODE Lat Lon """
-        df = pd.read_csv(filename, sep='\t')
+        df = pd.read_csv(filename, sep='\s+')
 
         return df
 
@@ -49,14 +49,14 @@ class MapData(object):
         """
         give the coordinates to do the mesh (can't be duplicate data)
         """
-        self.coordinates = self.df[['Lat', 'Lon']].drop_duplicates()
+        self.coordinates = self.df[['Lat', 'Lon']]#.drop_duplicates()
 
     def project_coordinates(self, m, boundry_country):
         self.coordinates['projected_lon'], self.coordinates['projected_lat'] = m(*(self.coordinates['Lon'].values, self.coordinates['Lat'].values))
         self.tmp_bound_lon, self.tmp_bound_lat = m(*(boundry_country['lon'], boundry_country['lat']))
 
 
-    def interpolate(self, numcols=50, numrows=50):
+    def interpolate(self, name_ancestry, numcols=50, numrows=50):
         """
         Take the boundry rect projected of the country to generate a meshgrid 
         """
@@ -68,11 +68,12 @@ class MapData(object):
         # interpolate 
         # TODO search for other interpolation types
 
-        x, y, z = self.coordinates['projected_lon'].values, self.coordinates['projected_lat'].values, self.ancestry_avg
-        interp = Rbf(x, y, z, function='inverse', smooth=0.1)
+        x, y, z = self.coordinates['projected_lon'].values, self.coordinates['projected_lat'].values, self.df[name_ancestry]
+        print x.shape, y.shape, z.shape
+        interp = Rbf(x, y, z, smooth=0.01, fuction='inverse')
         zi = interp(xi, yi)
         
-        zi = zi.clip(0)
+        zi = np.clip(zi, a_min=0, a_max=1)
         #print zi
         # Kriging interpolaiion
         """gp = GaussianProcess(regr='constant', corr='absolute_exponential',

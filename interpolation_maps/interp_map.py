@@ -42,7 +42,7 @@ class MainDisplay(object):
             ax=self.ax, zorder=3)
         
         # contour plot
-        con = self.anc_map.contourf(xi, yi, zi, zorder=5, levels=np.arange(0.0, 100., 9.)) #, cmap='jet',
+        con = self.anc_map.contourf(xi, yi, zi, zorder=5, levels=np.arange(0.0, 1.1, .1)) #, cmap='jet',
                                     #levels=np.arange(0.0001, z.max(), 0.05), antialiased=True)
         # check alpha parameter for areas without data
         # TODO fix the levels .. hardcoded number for now 
@@ -105,13 +105,13 @@ def main(filename_coord, filename_anc, column, shapefile, boundry_lines):
     for country, anc, boundry_rect in zip(shapefile, filename_anc, boundry_lines):
         map_data = MapData(filename_coord, anc, columns)
         map_data.get_coordinates()
-        map_data.get_ancestry_average_by_coordinates(columns[1])
+        #map_data.get_ancestry_average_by_coordinates(columns[1])
 
         map_data.project_coordinates(display.anc_map, boundry_rect) # pass the rect of the country
-        xi, yi, zi, x, y, z = map_data.interpolate()
+        xi, yi, zi, x, y, z = map_data.interpolate(columns[1])
         shape_clip = process_shapefile(country, display.anc_map, display.ax)
 
-        display.draw(xi, yi, zi, x, y, z, map_data.coordinates, map_data.ancestry_avg, shape_clip, level_min, level_max)
+        display.draw(xi, yi, zi, x, y, z, map_data.coordinates, map_data.df[columns[1]], shape_clip, level_min, level_max)
     display.add_colorbar()
 
     plt.title("Mean Anc {}".format(column[1]))
