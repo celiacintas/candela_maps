@@ -70,10 +70,10 @@ class MapData(object):
 
         x, y, z = self.coordinates['projected_lon'].values, self.coordinates['projected_lat'].values, self.df[name_ancestry]
         print x.shape, y.shape, z.shape
-        interp = Rbf(x, y, z, smooth=0.01, fuction='inverse')
+        interp = Rbf(x, y, z, smooth=0.01, fuction='thin_plate')
         zi = interp(xi, yi)
         
-        zi = np.clip(zi, a_min=0, a_max=1)
+        zi = np.clip(zi, a_min=0., a_max=1.)
         #print zi
         # Kriging interpolaiion
         """gp = GaussianProcess(regr='constant', corr='absolute_exponential',
