@@ -22,7 +22,7 @@ class MapData(object):
         df_coordinates = self.load_coordinates(filename_coor)
         df_ancestry = self.load_ancestry(filename_anc, columns, nrows)
         self.df = pd.merge(df_coordinates, df_ancestry, on=['CODE'])
-        self.df.to_csv('jijiji.txt', index=False)
+        #self.df.to_csv('jijiji.txt', index=False)
 
     def load_coordinates(self, filename):
         """the file has to be CODE Lat Lon """
